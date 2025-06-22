@@ -51,6 +51,19 @@ module.exports = {
             options: {
                 placeholder: 'https://your-retool-webhook.com/accept-quote'
             }
+        },
+        validationResponse: {
+            label: {
+                en: 'Validation Response'
+            },
+            type: 'Object',
+            defaultValue: null,
+            bindable: true,
+            section: 'data',
+            bindingValidation: {
+                type: 'object',
+                tooltip: 'Bind the response from your validation workflow here'
+            }
         }
     },
     sections: {
@@ -59,6 +72,12 @@ module.exports = {
                 en: 'Configuration'
             },
             defaultOpen: true
+        },
+        data: {
+            label: {
+                en: 'Data'
+            },
+            defaultOpen: false
         }
     }
 };
