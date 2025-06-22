@@ -114,14 +114,22 @@ export default {
       quoteData: null,
       accepted: false,
       processing: false,
-      token: null,
-      // Retool webhook URLs - can be made configurable later
-      validateUrl: 'https://webhooks.retool.com/racqsolar/3863e01e-43ce-4a63-8fbb-e09b18a3f0a2',
-      acceptUrl: 'https://webhooks.retool.com/racqsolar/YOUR-ACCEPT-WEBHOOK-URL' // You'll need to provide this
+      token: null
     };
+  },
+  computed: {
+    // Get webhook URLs from WeWeb configuration or use defaults
+    validateUrl() {
+      return this.content.validateTokenUrl || 'https://webhooks.retool.com/racqsolar/3863e01e-43ce-4a63-8fbb-e09b18a3f0a2';
+    },
+    acceptUrl() {
+      return this.content.acceptQuoteUrl || 'https://webhooks.retool.com/racqsolar/YOUR-ACCEPT-WEBHOOK-URL';
+    }
   },
   mounted() {
     console.log('🚀 Quote Acceptance Component Mounted');
+    console.log('Validation URL:', this.validateUrl);
+    console.log('Accept URL:', this.acceptUrl);
     this.initializeComponent();
   },
   methods: {
@@ -145,6 +153,7 @@ export default {
     async validateToken() {
       try {
         console.log('📤 Calling validation webhook...');
+        console.log('URL:', this.validateUrl);
         
         const response = await fetch(this.validateUrl, {
           method: 'POST',
@@ -207,6 +216,11 @@ export default {
     },
 
     async confirmQuote() {
+      if (!this.acceptUrl || this.acceptUrl === 'https://webhooks.retool.com/racqsolar/YOUR-ACCEPT-WEBHOOK-URL') {
+        alert('Accept quote webhook URL not configured. Please contact support.');
+        return;
+      }
+
       this.processing = true;
       
       try {
@@ -245,6 +259,15 @@ export default {
       
       if (response.success) {
         this.accepted = true;
+        // Emit event for WeWeb tracking if needed
+        this.$emit('trigger-event', {
+          name: 'quote:accepted',
+          event: {
+            token: this.token,
+            quoteId: this.quoteData.quoteId,
+            timestamp: new Date().toISOString()
+          }
+        });
       } else {
         alert(response.message || 'Unable to process your request. Please try again.');
       }
