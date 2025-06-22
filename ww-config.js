@@ -10,28 +10,11 @@ export default {
     },
     triggerEvents: [
         {
-            name: 'quote:validate',
-            label: { en: 'On quote validate' },
-            event: {
-                token: '',
-                timestamp: ''
-            }
-        },
-        {
-            name: 'quote:accept',
-            label: { en: 'On quote accept' },
+            name: 'quote:loaded',
+            label: { en: 'Quote data loaded' },
             event: {
                 token: '',
                 quoteData: {},
-                timestamp: ''
-            }
-        },
-        {
-            name: 'quote:accepted',
-            label: { en: 'Quote accepted successfully' },
-            event: {
-                token: '',
-                quoteId: '',
                 timestamp: ''
             }
         }
@@ -54,48 +37,11 @@ export default {
                 en: 'Validate API Key'
             },
             type: 'Text',
-            defaultValue: 'retool_wk_5d15a0ab90f34ff88c6a8fbed9488cf2',
+            defaultValue: '', // REMOVED hardcoded API key for security
             bindable: true,
             section: 'settings',
             options: {
                 placeholder: 'retool_wk_...'
-            }
-        },
-        acceptQuoteUrl: {
-            label: {
-                en: 'Accept Quote URL'
-            },
-            type: 'Text',
-            defaultValue: '',
-            bindable: true,
-            section: 'settings',
-            options: {
-                placeholder: 'https://api.retool.com/v1/workflows/YOUR-WORKFLOW-ID/startTrigger'
-            }
-        },
-        acceptApiKey: {
-            label: {
-                en: 'Accept API Key'
-            },
-            type: 'Text',
-            defaultValue: '',
-            bindable: true,
-            section: 'settings',
-            options: {
-                placeholder: 'retool_wk_...'
-            }
-        },
-        validationResponse: {
-            label: {
-                en: 'Validation Response'
-            },
-            type: 'Object',
-            defaultValue: null,
-            bindable: true,
-            section: 'data',
-            bindingValidation: {
-                type: 'object',
-                tooltip: 'This field is deprecated - component now handles API calls directly'
             }
         }
     },
@@ -105,12 +51,6 @@ export default {
                 en: 'API Configuration'
             },
             defaultOpen: true
-        },
-        data: {
-            label: {
-                en: 'Data (Deprecated)'
-            },
-            defaultOpen: false
         }
     }
 };
