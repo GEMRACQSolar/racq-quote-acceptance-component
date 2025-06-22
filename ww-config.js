@@ -10,6 +10,14 @@ export default {
     },
     triggerEvents: [
         {
+            name: 'quote:validate',
+            label: { en: 'On token validation needed' },
+            event: {
+                token: '',
+                timestamp: ''
+            }
+        },
+        {
             name: 'quote:loaded',
             label: { en: 'Quote data loaded' },
             event: {
@@ -20,6 +28,26 @@ export default {
         }
     ],
     properties: {
-        // No configuration needed - everything is self-contained
+        validationResponse: {
+            label: {
+                en: 'Validation Response'
+            },
+            type: 'Object',
+            defaultValue: {},
+            bindable: true,
+            section: 'settings',
+            bindingValidation: {
+                type: 'object',
+                tooltip: 'Bind the response from your WeWeb validation workflow here'
+            }
+        }
+    },
+    sections: {
+        settings: {
+            label: {
+                en: 'Settings'
+            },
+            defaultOpen: true
+        }
     }
 };
