@@ -10,7 +10,7 @@
     <div v-else-if="error" class="error-state">
       <div class="error-icon">⚠️</div>
       <h2>Unable to Load Quote</h2>
-      <p>{{ errorMessage }}</p>
+      <p class="error-message">{{ errorMessage }}</p>
       <button class="secondary-button" @click="retry">Try Again</button>
     </div>
 
@@ -224,6 +224,9 @@ export default {
   margin: 0 auto;
   padding: 20px;
   font-family: Arial, sans-serif;
+  background-color: #000813;
+  min-height: 100vh;
+  color: #ffffff;
 }
 
 /* Loading State */
@@ -235,7 +238,7 @@ export default {
 .spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid #f3f3f3;
+  border: 4px solid rgba(255, 255, 255, 0.1);
   border-top: 4px solid #FFE600;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -258,43 +261,54 @@ export default {
   margin-bottom: 20px;
 }
 
+.error-state h2 {
+  color: #ffffff;
+  margin-bottom: 20px;
+}
+
+.error-message {
+  color: #cccccc;
+  margin-bottom: 30px;
+}
+
 /* Quote Details */
 .header-section {
   text-align: center;
   margin-bottom: 30px;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 20px;
 }
 
 .header-section h1 {
-  color: #003478;
+  color: #FFE600;
   margin-bottom: 10px;
 }
 
 .quote-ref {
-  color: #666;
+  color: #cccccc;
   font-size: 14px;
 }
 
 .customer-info {
-  background-color: #f8f9fa;
+  background-color: rgba(255, 255, 255, 0.05);
   padding: 20px;
   border-radius: 8px;
   margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .customer-info h3 {
-  color: #003478;
+  color: #FFE600;
   margin-top: 0;
 }
 
 .customer-info p {
   margin: 8px 0;
-  color: #333;
+  color: #ffffff;
 }
 
 .quote-summary {
-  background-color: #fff;
+  background-color: rgba(255, 230, 0, 0.05);
   border: 2px solid #FFE600;
   border-radius: 8px;
   padding: 20px;
@@ -302,7 +316,7 @@ export default {
 }
 
 .quote-summary h3 {
-  color: #003478;
+  color: #FFE600;
   margin-top: 0;
   margin-bottom: 20px;
 }
@@ -311,17 +325,18 @@ export default {
   display: flex;
   justify-content: space-between;
   padding: 10px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
 .price-row.total {
   border-bottom: none;
-  border-top: 2px solid #003478;
+  border-top: 2px solid #FFE600;
   margin-top: 10px;
   padding-top: 15px;
   font-weight: bold;
   font-size: 18px;
-  color: #003478;
+  color: #FFE600;
 }
 
 .rebate {
@@ -335,25 +350,27 @@ export default {
 }
 
 .explanation {
-  color: #666;
+  color: #cccccc;
   line-height: 1.6;
   margin-bottom: 25px;
 }
 
 .primary-button {
-  background-color: #003478;
-  color: white;
+  background-color: #FFE600;
+  color: #000813;
   border: none;
   padding: 15px 40px;
   font-size: 16px;
   font-weight: bold;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s;
 }
 
 .primary-button:hover:not(:disabled) {
-  background-color: #002550;
+  background-color: #ffd700;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 230, 0, 0.3);
 }
 
 .primary-button:disabled {
@@ -362,22 +379,23 @@ export default {
 }
 
 .secondary-button {
-  background-color: #6c757d;
-  color: white;
-  border: none;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   padding: 12px 30px;
   font-size: 16px;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s;
 }
 
 .secondary-button:hover {
-  background-color: #5a6268;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: #FFE600;
 }
 
 .disclaimer {
-  color: #999;
+  color: #999999;
   font-size: 14px;
   margin-top: 20px;
   font-style: italic;
@@ -395,33 +413,34 @@ export default {
 }
 
 .success-state h2 {
-  color: #003478;
+  color: #FFE600;
   margin-bottom: 20px;
 }
 
 .success-message {
-  color: #333;
+  color: #ffffff;
   font-size: 18px;
   line-height: 1.6;
   margin-bottom: 30px;
 }
 
 .next-steps {
-  background-color: #f8f9fa;
+  background-color: rgba(255, 255, 255, 0.05);
   padding: 25px;
   border-radius: 8px;
   text-align: left;
   max-width: 400px;
   margin: 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .next-steps h3 {
-  color: #003478;
+  color: #FFE600;
   margin-top: 0;
 }
 
 .next-steps ul {
-  color: #666;
+  color: #cccccc;
   line-height: 1.8;
   padding-left: 20px;
 }
