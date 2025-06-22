@@ -8,6 +8,25 @@ module.exports = {
             icon: 'check-circle'
         }
     },
+    triggerEvents: [
+        {
+            name: 'quote:validate',
+            label: { en: 'On quote validate' },
+            event: {
+                token: '',
+                timestamp: ''
+            }
+        },
+        {
+            name: 'quote:accept',
+            label: { en: 'On quote accept' },
+            event: {
+                token: '',
+                quoteData: {},
+                timestamp: ''
+            }
+        }
+    ],
     properties: {
         validateTokenUrl: {
             label: {
