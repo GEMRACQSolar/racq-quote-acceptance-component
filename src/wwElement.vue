@@ -125,6 +125,9 @@ export default {
   watch: {
     validationResponse: {
       handler(newValue) {
+        console.log('📊 ValidationResponse watcher triggered');
+        console.log('New value:', JSON.stringify(newValue, null, 2));
+        
         if (newValue && Object.keys(newValue).length > 0) {
           this.handleValidationResponse(newValue);
         }
@@ -134,6 +137,8 @@ export default {
     }
   },
   mounted() {
+    console.log('🚀 Quote Acceptance Component Mounted');
+    console.log('Initial content:', this.content);
     this.initializeComponent();
   },
   methods: {
@@ -141,6 +146,8 @@ export default {
       // Get token from URL
       const urlParams = new URLSearchParams(window.location.search);
       this.token = urlParams.get('token');
+      
+      console.log('🔍 Token from URL:', this.token);
       
       if (!this.token) {
         this.loading = false;
@@ -150,6 +157,7 @@ export default {
       this.loading = true;
 
       // Emit event for WeWeb to handle token validation
+      console.log('📤 Emitting quote:validate event');
       this.$emit('trigger-event', {
         name: 'quote:validate',
         event: {
@@ -161,14 +169,42 @@ export default {
 
     // Called by WeWeb workflow after validation
     handleValidationResponse(response) {
+      console.log('📥 handleValidationResponse called');
+      console.log('Response type:', typeof response);
+      console.log('Full response:', JSON.stringify(response, null, 2));
+      
       this.loading = false;
       
-      if (response.success) {
-        this.quoteData = response.acceptanceRecord?.quote_data;
-        this.accepted = response.alreadyAccepted || false;
-      } else {
+      try {
+        if (response.success) {
+          console.log('✅ Response indicates success');
+          console.log('acceptanceRecord:', response.acceptanceRecord);
+          
+          // Check if data is nested differently
+          if (response.acceptanceRecord?.quote_data) {
+            this.quoteData = response.acceptanceRecord.quote_data;
+            console.log('Quote data found in acceptanceRecord.quote_data');
+          } else if (response.acceptanceRecord) {
+            // Maybe the acceptanceRecord IS the quote data
+            this.quoteData = response.acceptanceRecord;
+            console.log('Using acceptanceRecord as quote data');
+          } else if (response.quoteData) {
+            // Maybe it's directly on the response
+            this.quoteData = response.quoteData;
+            console.log('Using response.quoteData');
+          }
+          
+          console.log('Final quoteData:', this.quoteData);
+          this.accepted = response.alreadyAccepted || false;
+        } else {
+          console.log('❌ Response indicates failure');
+          this.error = true;
+          this.errorMessage = response.error || 'Invalid or expired quote link.';
+        }
+      } catch (err) {
+        console.error('💥 Error in handleValidationResponse:', err);
         this.error = true;
-        this.errorMessage = response.error || 'Invalid or expired quote link.';
+        this.errorMessage = 'Error processing response: ' + err.message;
       }
     },
 
