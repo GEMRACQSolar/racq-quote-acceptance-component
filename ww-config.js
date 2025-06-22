@@ -35,7 +35,7 @@ export default {
             type: 'Object',
             defaultValue: {},
             bindable: true,
-            section: 'settings',
+            section: 'display',
             bindingValidation: {
                 type: 'object',
                 tooltip: 'Bind the response from your WeWeb validation workflow here'
@@ -43,11 +43,17 @@ export default {
         }
     },
     sections: {
+        display: {
+            label: {
+                en: 'Display'
+            },
+            defaultOpen: true
+        },
         settings: {
             label: {
                 en: 'Settings'
             },
-            defaultOpen: true
+            defaultOpen: false
         }
     }
 };
