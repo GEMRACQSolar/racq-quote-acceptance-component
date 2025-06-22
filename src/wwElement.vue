@@ -117,6 +117,22 @@ export default {
       token: null
     };
   },
+  computed: {
+    validationResponse() {
+      return this.content.validationResponse;
+    }
+  },
+  watch: {
+    validationResponse: {
+      handler(newValue) {
+        if (newValue && Object.keys(newValue).length > 0) {
+          this.handleValidationResponse(newValue);
+        }
+      },
+      immediate: true,
+      deep: true
+    }
+  },
   mounted() {
     this.initializeComponent();
   },
@@ -130,6 +146,8 @@ export default {
         this.loading = false;
         return;
       }
+
+      this.loading = true;
 
       // Emit event for WeWeb to handle token validation
       this.$emit('trigger-event', {
@@ -146,11 +164,11 @@ export default {
       this.loading = false;
       
       if (response.success) {
-        this.quoteData = response.quoteData;
+        this.quoteData = response.acceptanceRecord?.quote_data;
         this.accepted = response.alreadyAccepted || false;
       } else {
         this.error = true;
-        this.errorMessage = response.message || 'Invalid or expired quote link.';
+        this.errorMessage = response.error || 'Invalid or expired quote link.';
       }
     },
 
