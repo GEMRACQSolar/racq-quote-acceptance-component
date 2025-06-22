@@ -120,10 +120,16 @@ export default {
   computed: {
     // Get webhook URLs from WeWeb configuration or use defaults
     validateUrl() {
-      return this.content.validateTokenUrl || 'https://webhooks.retool.com/racqsolar/3863e01e-43ce-4a63-8fbb-e09b18a3f0a2';
+      return this.content.validateTokenUrl || 'https://api.retool.com/v1/workflows/7ecf25b7-d8ff-4c0f-b879-1d2f60d255a2/startTrigger';
+    },
+    validateApiKey() {
+      return this.content.validateApiKey || 'retool_wk_5d15a0ab90f34ff88c6a8fbed9488cf2';
     },
     acceptUrl() {
-      return this.content.acceptQuoteUrl || 'https://webhooks.retool.com/racqsolar/YOUR-ACCEPT-WEBHOOK-URL';
+      return this.content.acceptQuoteUrl || 'https://api.retool.com/v1/workflows/YOUR-ACCEPT-WORKFLOW-ID/startTrigger';
+    },
+    acceptApiKey() {
+      return this.content.acceptApiKey || '';
     }
   },
   mounted() {
@@ -159,6 +165,7 @@ export default {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'X-Workflow-Api-Key': this.validateApiKey
           },
           body: JSON.stringify({
             token: this.token
@@ -168,6 +175,8 @@ export default {
         console.log('📥 Response status:', response.status);
         
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Response error:', errorText);
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
@@ -216,7 +225,7 @@ export default {
     },
 
     async confirmQuote() {
-      if (!this.acceptUrl || this.acceptUrl === 'https://webhooks.retool.com/racqsolar/YOUR-ACCEPT-WEBHOOK-URL') {
+      if (!this.acceptUrl || this.acceptUrl.includes('YOUR-ACCEPT-WORKFLOW-ID')) {
         alert('Accept quote webhook URL not configured. Please contact support.');
         return;
       }
@@ -226,11 +235,18 @@ export default {
       try {
         console.log('📤 Confirming quote acceptance...');
         
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        
+        // Add API key if provided
+        if (this.acceptApiKey) {
+          headers['X-Workflow-Api-Key'] = this.acceptApiKey;
+        }
+        
         const response = await fetch(this.acceptUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: headers,
           body: JSON.stringify({
             token: this.token,
             quoteId: this.quoteData.quoteId,
