@@ -87,6 +87,13 @@
         </ul>
       </div>
     </div>
+
+    <!-- Initial Loading (no token) State -->
+    <div v-else-if="!token && !loading" class="no-token-state">
+      <div class="error-icon">🔗</div>
+      <h2>No Quote Found</h2>
+      <p>Please use the link from your email to access your quote.</p>
+    </div>
   </div>
 </template>
 
@@ -98,10 +105,10 @@ export default {
     wwEditorState: { type: Object, required: true },
     /* wwEditor:end */
   },
-  emits: ['update:content'],
+  emits: ['update:content', 'trigger-event'],
   data() {
     return {
-      loading: true,
+      loading: false,
       error: false,
       errorMessage: '',
       quoteData: null,
@@ -110,98 +117,72 @@ export default {
       token: null
     };
   },
-  computed: {
-    validateTokenUrl() {
-      return this.content.validateTokenUrl || '';
-    },
-    acceptQuoteUrl() {
-      return this.content.acceptQuoteUrl || '';
-    }
-  },
   mounted() {
-    this.loadQuoteData();
+    this.initializeComponent();
   },
   methods: {
-    async loadQuoteData() {
+    initializeComponent() {
       // Get token from URL
       const urlParams = new URLSearchParams(window.location.search);
       this.token = urlParams.get('token');
       
       if (!this.token) {
-        this.error = true;
-        this.errorMessage = 'No quote token found. Please use the link from your email.';
         this.loading = false;
         return;
       }
 
-      if (!this.validateTokenUrl) {
-        this.error = true;
-        this.errorMessage = 'Component not configured. Please set the validation URL.';
-        this.loading = false;
-        return;
-      }
-
-      try {
-        const response = await fetch(this.validateTokenUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token: this.token })
-        });
-
-        const data = await response.json();
-        
-        if (data.success) {
-          this.quoteData = data.quoteData;
-          this.accepted = data.alreadyAccepted || false;
-        } else {
-          this.error = true;
-          this.errorMessage = data.message || 'Invalid or expired quote link.';
+      // Emit event for WeWeb to handle token validation
+      this.$emit('trigger-event', {
+        name: 'quote:validate',
+        event: {
+          token: this.token,
+          timestamp: new Date().toISOString()
         }
-      } catch (err) {
+      });
+    },
+
+    // Called by WeWeb workflow after validation
+    handleValidationResponse(response) {
+      this.loading = false;
+      
+      if (response.success) {
+        this.quoteData = response.quoteData;
+        this.accepted = response.alreadyAccepted || false;
+      } else {
         this.error = true;
-        this.errorMessage = 'Unable to load quote details. Please try again.';
-      } finally {
-        this.loading = false;
+        this.errorMessage = response.message || 'Invalid or expired quote link.';
       }
     },
 
-    async confirmQuote() {
-      if (!this.acceptQuoteUrl) {
-        alert('Component not configured. Please set the acceptance URL.');
-        return;
-      }
-
+    confirmQuote() {
       this.processing = true;
       
-      try {
-        const response = await fetch(this.acceptQuoteUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token: this.token })
-        });
-
-        const data = await response.json();
-        
-        if (data.success) {
-          this.accepted = true;
-        } else {
-          alert(data.message || 'Unable to process your request. Please try again.');
+      // Emit event for WeWeb to handle acceptance
+      this.$emit('trigger-event', {
+        name: 'quote:accept',
+        event: {
+          token: this.token,
+          quoteData: this.quoteData,
+          timestamp: new Date().toISOString()
         }
-      } catch (err) {
-        alert('An error occurred. Please try again or contact support.');
-      } finally {
-        this.processing = false;
+      });
+    },
+
+    // Called by WeWeb workflow after acceptance
+    handleAcceptanceResponse(response) {
+      this.processing = false;
+      
+      if (response.success) {
+        this.accepted = true;
+      } else {
+        alert(response.message || 'Unable to process your request. Please try again.');
       }
     },
 
     retry() {
       this.error = false;
       this.loading = true;
-      this.loadQuoteData();
+      this.initializeComponent();
     },
 
     formatCurrency(amount) {
@@ -251,7 +232,7 @@ export default {
 }
 
 /* Error State */
-.error-state {
+.error-state, .no-token-state {
   text-align: center;
   padding: 60px 20px;
 }
@@ -261,7 +242,7 @@ export default {
   margin-bottom: 20px;
 }
 
-.error-state h2 {
+.error-state h2, .no-token-state h2 {
   color: #ffffff;
   margin-bottom: 20px;
 }
@@ -269,6 +250,10 @@ export default {
 .error-message {
   color: #cccccc;
   margin-bottom: 30px;
+}
+
+.no-token-state p {
+  color: #cccccc;
 }
 
 /* Quote Details */
