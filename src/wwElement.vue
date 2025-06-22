@@ -23,28 +23,28 @@
 
       <div class="customer-info">
         <h3>Your Details</h3>
-        <p><strong>Name:</strong> {{ quoteData.customerDetails.data.Name }}</p>
-        <p><strong>Email:</strong> {{ quoteData.customerDetails.data.Email }}</p>
-        <p><strong>Address:</strong> {{ quoteData.customerDetails.data.Address }}</p>
+        <p><strong>Name:</strong> {{ quoteData.customerDetails?.data?.Name }}</p>
+        <p><strong>Email:</strong> {{ quoteData.customerDetails?.data?.Email }}</p>
+        <p><strong>Address:</strong> {{ quoteData.customerDetails?.data?.Address }}</p>
       </div>
 
       <div class="quote-summary">
         <h3>{{ quoteData.packageName }}</h3>
         <div class="price-row">
           <span>System Size:</span>
-          <span>{{ quoteData.savingsEstimate.systemSize }}kW</span>
+          <span>{{ quoteData.savingsEstimate?.systemSize }}kW</span>
         </div>
         <div class="price-row">
           <span>System Price:</span>
-          <span>{{ formatCurrency(quoteData.pricing.grossPrice) }}</span>
+          <span>{{ formatCurrency(quoteData.pricing?.grossPrice) }}</span>
         </div>
         <div class="price-row">
           <span>STC Rebate:</span>
-          <span class="rebate">-{{ formatCurrency(quoteData.pricing.stcRebate) }}</span>
+          <span class="rebate">-{{ formatCurrency(quoteData.pricing?.stcRebate) }}</span>
         </div>
         <div class="price-row total">
           <span>Out-of-Pocket Cost:</span>
-          <span>{{ formatCurrency(quoteData.pricing.netPrice) }}</span>
+          <span>{{ formatCurrency(quoteData.pricing?.netPrice) }}</span>
         </div>
       </div>
 
@@ -114,35 +114,18 @@ export default {
       quoteData: null,
       accepted: false,
       processing: false,
-      token: null
+      token: null,
+      // Retool webhook URLs - can be made configurable later
+      validateUrl: 'https://webhooks.retool.com/racqsolar/3863e01e-43ce-4a63-8fbb-e09b18a3f0a2',
+      acceptUrl: 'https://webhooks.retool.com/racqsolar/YOUR-ACCEPT-WEBHOOK-URL' // You'll need to provide this
     };
-  },
-  computed: {
-    validationResponse() {
-      return this.content.validationResponse;
-    }
-  },
-  watch: {
-    validationResponse: {
-      handler(newValue) {
-        console.log('📊 ValidationResponse watcher triggered');
-        console.log('New value:', JSON.stringify(newValue, null, 2));
-        
-        if (newValue && Object.keys(newValue).length > 0) {
-          this.handleValidationResponse(newValue);
-        }
-      },
-      immediate: true,
-      deep: true
-    }
   },
   mounted() {
     console.log('🚀 Quote Acceptance Component Mounted');
-    console.log('Initial content:', this.content);
     this.initializeComponent();
   },
   methods: {
-    initializeComponent() {
+    async initializeComponent() {
       // Get token from URL
       const urlParams = new URLSearchParams(window.location.search);
       this.token = urlParams.get('token');
@@ -154,75 +137,109 @@ export default {
         return;
       }
 
+      // Start loading and validate the token
       this.loading = true;
-
-      // Emit event for WeWeb to handle token validation
-      console.log('📤 Emitting quote:validate event');
-      this.$emit('trigger-event', {
-        name: 'quote:validate',
-        event: {
-          token: this.token,
-          timestamp: new Date().toISOString()
-        }
-      });
+      await this.validateToken();
     },
 
-    // Called by WeWeb workflow after validation
+    async validateToken() {
+      try {
+        console.log('📤 Calling validation webhook...');
+        
+        const response = await fetch(this.validateUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            token: this.token
+          })
+        });
+
+        console.log('📥 Response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('📊 Validation response:', data);
+
+        this.handleValidationResponse(data);
+        
+      } catch (err) {
+        console.error('💥 Error validating token:', err);
+        this.loading = false;
+        this.error = true;
+        this.errorMessage = 'Unable to connect to the server. Please try again later.';
+      }
+    },
+
     handleValidationResponse(response) {
-      console.log('📥 handleValidationResponse called');
-      console.log('Response type:', typeof response);
-      console.log('Full response:', JSON.stringify(response, null, 2));
-      
+      console.log('📥 Processing validation response...');
       this.loading = false;
       
       try {
         if (response.success) {
-          console.log('✅ Response indicates success');
-          console.log('acceptanceRecord:', response.acceptanceRecord);
+          console.log('✅ Validation successful');
           
-          // Check if data is nested differently
+          // The response structure based on your logs shows the quote data is in acceptanceRecord.quote_data
           if (response.acceptanceRecord?.quote_data) {
             this.quoteData = response.acceptanceRecord.quote_data;
-            console.log('Quote data found in acceptanceRecord.quote_data');
-          } else if (response.acceptanceRecord) {
-            // Maybe the acceptanceRecord IS the quote data
-            this.quoteData = response.acceptanceRecord;
-            console.log('Using acceptanceRecord as quote data');
-          } else if (response.quoteData) {
-            // Maybe it's directly on the response
-            this.quoteData = response.quoteData;
-            console.log('Using response.quoteData');
+            console.log('Quote data extracted:', this.quoteData);
+          } else {
+            throw new Error('Quote data not found in response');
           }
           
-          console.log('Final quoteData:', this.quoteData);
+          // Check if already accepted
           this.accepted = response.alreadyAccepted || false;
+          
         } else {
-          console.log('❌ Response indicates failure');
+          console.log('❌ Validation failed');
           this.error = true;
           this.errorMessage = response.error || 'Invalid or expired quote link.';
         }
       } catch (err) {
-        console.error('💥 Error in handleValidationResponse:', err);
+        console.error('💥 Error processing response:', err);
         this.error = true;
-        this.errorMessage = 'Error processing response: ' + err.message;
+        this.errorMessage = 'Error processing quote data: ' + err.message;
       }
     },
 
-    confirmQuote() {
+    async confirmQuote() {
       this.processing = true;
       
-      // Emit event for WeWeb to handle acceptance
-      this.$emit('trigger-event', {
-        name: 'quote:accept',
-        event: {
-          token: this.token,
-          quoteData: this.quoteData,
-          timestamp: new Date().toISOString()
+      try {
+        console.log('📤 Confirming quote acceptance...');
+        
+        const response = await fetch(this.acceptUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            token: this.token,
+            quoteId: this.quoteData.quoteId,
+            customerEmail: this.quoteData.customerDetails?.data?.Email
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-      });
+
+        const data = await response.json();
+        console.log('📊 Acceptance response:', data);
+
+        this.handleAcceptanceResponse(data);
+        
+      } catch (err) {
+        console.error('💥 Error accepting quote:', err);
+        this.processing = false;
+        alert('Unable to process your request. Please try again later.');
+      }
     },
 
-    // Called by WeWeb workflow after acceptance
     handleAcceptanceResponse(response) {
       this.processing = false;
       
@@ -235,7 +252,7 @@ export default {
 
     retry() {
       this.error = false;
-      this.loading = true;
+      this.errorMessage = '';
       this.initializeComponent();
     },
 
