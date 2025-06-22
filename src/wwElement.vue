@@ -48,7 +48,6 @@
         </div>
       </div>
 
-      <!-- Emit event when quote is loaded so WeWeb can show acceptance button -->
       <slot></slot>
     </div>
 
@@ -79,12 +78,32 @@ export default {
       token: null
     };
   },
+  computed: {
+    // Watch for validation response from WeWeb workflow
+    validationResponse() {
+      return this.content.validationResponse;
+    }
+  },
+  watch: {
+    validationResponse: {
+      handler(newValue) {
+        console.log('📊 ValidationResponse changed:', newValue);
+        if (newValue && Object.keys(newValue).length > 0) {
+          this.handleValidationResponse(newValue);
+        }
+      },
+      immediate: true,
+      deep: true
+    }
+  },
   mounted() {
     console.log('🚀 Quote Acceptance Component Mounted');
-    this.validateToken();
+    console.log('Initial content:', this.content);
+    console.log('Initial validationResponse:', this.validationResponse);
+    this.initializeComponent();
   },
   methods: {
-    async validateToken() {
+    initializeComponent() {
       // Get token from URL
       const urlParams = new URLSearchParams(window.location.search);
       this.token = urlParams.get('token');
@@ -96,41 +115,37 @@ export default {
         return;
       }
 
-      // Start loading
+      // Check if we already have validation response
+      if (this.validationResponse && Object.keys(this.validationResponse).length > 0) {
+        console.log('📦 Found existing validation response');
+        this.handleValidationResponse(this.validationResponse);
+        return;
+      }
+
       this.loading = true;
 
-      try {
-        console.log('📤 Calling Retool validation webhook...');
-        
-        const response = await fetch('https://api.retool.com/v1/workflows/7ecf25b7-d8ff-4c0f-b879-1d2f60d255a2/startTrigger', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Workflow-Api-Key': 'retool_wk_5d15a0ab90f34ff88c6a8fbed9488cf2'
-          },
-          body: JSON.stringify({
-            token: this.token
-          })
-        });
-
-        console.log('📥 Response status:', response.status);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Response error:', errorText);
-          throw new Error(`HTTP error! status: ${response.status}`);
+      // Emit event for WeWeb to handle token validation
+      console.log('📤 Emitting quote:validate event for WeWeb workflow');
+      this.$emit('trigger-event', {
+        name: 'quote:validate',
+        event: {
+          token: this.token,
+          timestamp: new Date().toISOString()
         }
+      });
+    },
 
-        const data = await response.json();
-        console.log('📊 Validation response:', data);
-
-        // Handle the response
-        if (data.success) {
+    handleValidationResponse(response) {
+      console.log('📥 handleValidationResponse called with:', response);
+      this.loading = false;
+      
+      try {
+        if (response.success) {
           console.log('✅ Validation successful');
           
-          // Extract quote data from the response
-          if (data.acceptanceRecord?.quote_data) {
-            this.quoteData = data.acceptanceRecord.quote_data;
+          // The response structure based on your logs shows the quote data is in acceptanceRecord.quote_data
+          if (response.acceptanceRecord?.quote_data) {
+            this.quoteData = response.acceptanceRecord.quote_data;
             console.log('Quote data extracted:', this.quoteData);
             
             // Emit event to let WeWeb know quote is loaded
@@ -148,22 +163,28 @@ export default {
         } else {
           console.log('❌ Validation failed');
           this.error = true;
-          this.errorMessage = data.error || 'Invalid or expired quote link.';
+          this.errorMessage = response.error || 'Invalid or expired quote link.';
         }
-        
       } catch (err) {
-        console.error('💥 Error validating token:', err);
+        console.error('💥 Error processing response:', err);
         this.error = true;
-        this.errorMessage = 'Unable to connect to the server. Please try again later.';
-      } finally {
-        this.loading = false;
+        this.errorMessage = 'Error processing quote data: ' + err.message;
       }
     },
 
     retry() {
       this.error = false;
       this.errorMessage = '';
-      this.validateToken();
+      this.loading = true;
+      
+      // Re-emit validation event
+      this.$emit('trigger-event', {
+        name: 'quote:validate',
+        event: {
+          token: this.token,
+          timestamp: new Date().toISOString()
+        }
+      });
     },
 
     formatCurrency(amount) {
